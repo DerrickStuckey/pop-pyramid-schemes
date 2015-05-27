@@ -38,8 +38,16 @@ summary(linear_fit)
 log_transform <- function(x) {log(x+1)}
 unlog_transform <- function(x) {exp(x)-1}
 
-# try with smoothed log-transformed interest rate var
+# compute smoothed log-transformed rates
 rates_pop_merged$log_rate <- log_transform(rates_pop_merged$interest_rate)
+
+# plot interest rate histograms with and without log-transform
+hist(rates_pop_merged$interest_rate, main="Interest Rate Distribution",
+     xlab="10-Year Treasury Rate", ylab="Frequency",breaks=10)
+hist(rates_pop_merged$log_rate, main="Log-Transformed Interest Rate Distribution",
+     xlab="Log-Transformed 10-Year Treasury Rate", ylab="Frequency",breaks=10)
+
+# try with smoothed log-transformed interest rate var
 log_fit <- lm(log_rate ~ X20_34 + X35.49 + X50.64 + over_64, data=rates_pop_merged)
 summary(log_fit)
 
@@ -61,7 +69,18 @@ future_log_rate_preds <- predict(log_fit, newdata=future_age_props)
 future_rate_preds_logmod <- unlog_transform(future_log_rate_preds)
 names(future_rate_preds_logmod) <- future_age_props$Year
 
-# plot some stuff
-plot(rates_pop_merged$interest_rate)
-plot(preds_logmod)
-plot(x=rates_pop_merged$interest_rate,y=preds_logmod)
+# plot the data and results
+plot(x=rates_pop_merged$Year, y=rates_pop_merged$interest_rate, main="Interest Rates over Time",
+     xlab="Year",ylab="10-Year Treasury Rate")
+
+plot(x=rates_pop_merged$Year, y=rates_pop_merged$log_rate, main="Log-Transformed Rates over Time",
+     xlab="Year",ylab="Log(10-Year Treasury Rate)")
+
+plot(y=preds_logmod,x=rates_pop_merged$Year, main="Predicted Rates (Log Model)",
+     xlab="Year",ylab="Predicted Rate")
+
+plot(y=preds,x=rates_pop_merged$Year, main="Predicted Rates (Base Model)",
+     xlab="Year",ylab="Predicted Rate")
+
+plot(x=rates_pop_merged$interest_rate,y=preds_logmod, main="Predicted vs Actual (Log Model)",
+     xlab="Actual 10-Year Treasury Rate", ylab="Predicted 10-Year Treasury Rate")
