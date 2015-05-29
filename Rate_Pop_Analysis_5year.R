@@ -22,7 +22,7 @@ total <- under_20 + X20_34 + X35_49 + X50_64 + over_64
 
 # construct dataframe for population buckets
 us_age_props <- data.frame("Year"=us_pop_wide$Year, "under_20"=under_20/total, "X20_34"=X20_34/total, 
-                           "X35-49"=X35_49/total, "X50-64"=X50_64/total, "over_64"=over_64/total)
+                           "X35_49"=X35_49/total, "X50_64"=X50_64/total, "over_64"=over_64/total)
 
 # remove any N/A rows
 us_age_props <- us_age_props[!is.na(us_age_props$Year),]
@@ -31,7 +31,7 @@ us_age_props <- us_age_props[!is.na(us_age_props$Year),]
 rates_pop_merged <- merge(us_10year_rates, us_age_props, by.x="half_decade", by.y="Year")
 
 # compute a simple linear regression fit
-linear_fit <- lm(interest_rate ~ X20_34 + X35.49 + X50.64 + over_64, data=rates_pop_merged)
+linear_fit <- lm(interest_rate ~ X20_34 + X35_49 + X50_64 + over_64, data=rates_pop_merged)
 summary(linear_fit)
 
 # define smoothed log-transform and un-transform
@@ -43,12 +43,16 @@ rates_pop_merged$log_rate <- log_transform(rates_pop_merged$interest_rate)
 
 # plot interest rate histograms with and without log-transform
 hist(rates_pop_merged$interest_rate, main="Interest Rate Distribution",
-     xlab="10-Year Treasury Rate", ylab="Frequency",breaks=10)
+     xlab="10-Year Treasury Rate", ylab="Probability",breaks=10,prob=TRUE)
+curve(dnorm(x,mean=mean(rates_pop_merged$interest_rate),
+            sd=sd(rates_pop_merged$interest_rate)),col="blue",add=TRUE)
 hist(rates_pop_merged$log_rate, main="Log-Transformed Interest Rate Distribution",
-     xlab="Log-Transformed 10-Year Treasury Rate", ylab="Frequency",breaks=10)
+     xlab="Log-Transformed 10-Year Treasury Rate", ylab="Probability",breaks=10,prob=TRUE)
+curve(dnorm(x,mean=mean(rates_pop_merged$log_rate),
+            sd=sd(rates_pop_merged$log_rate)),col="blue",add=TRUE)
 
 # try with smoothed log-transformed interest rate var
-log_fit <- lm(log_rate ~ X20_34 + X35.49 + X50.64 + over_64, data=rates_pop_merged)
+log_fit <- lm(log_rate ~ X20_34 + X35_49 + X50_64 + over_64, data=rates_pop_merged)
 summary(log_fit)
 
 # historical predictions for linear fit model
@@ -76,11 +80,33 @@ plot(x=rates_pop_merged$Year, y=rates_pop_merged$interest_rate, main="Interest R
 plot(x=rates_pop_merged$Year, y=rates_pop_merged$log_rate, main="Log-Transformed Rates over Time",
      xlab="Year",ylab="Log(10-Year Treasury Rate)")
 
+# plot predictor variables over time
+plot(x=rates_pop_merged$Year, y=rates_pop_merged$under_20,ylim=c(0.0,0.5),col="1",
+     xlab="Year",ylab="Proportion")
+points(x=rates_pop_merged$Year, y=rates_pop_merged$X20_34,col="2")
+points(x=rates_pop_merged$Year, y=rates_pop_merged$X35_49,col="3")
+points(x=rates_pop_merged$Year, y=rates_pop_merged$X50_64,col="4")
+points(x=rates_pop_merged$Year, y=rates_pop_merged$over_64,col="5")
+legend("topright", legend = c("under 20","20-34","35-49","50-64","65+"), pch=1, col=1:5,horiz=TRUE)
+
+# plot predictions
 plot(y=preds_logmod,x=rates_pop_merged$Year, main="Predicted Rates (Log Model)",
      xlab="Year",ylab="Predicted Rate")
 
 plot(y=preds,x=rates_pop_merged$Year, main="Predicted Rates (Base Model)",
      xlab="Year",ylab="Predicted Rate")
 
+# predictions, actuals vs time
+plot(y=preds_logmod,x=rates_pop_merged$Year, main="Predicted and Actual Rates",
+     xlab="Year",ylab="10-year Treasury Rate",col="red")
+points(x=rates_pop_merged$Year, y=rates_pop_merged$interest_rate,col="blue")
+legend("topright", legend = c("predicted","actual"), pch=1, col=c("red","blue"),horiz=FALSE)
+
 plot(x=rates_pop_merged$interest_rate,y=preds_logmod, main="Predicted vs Actual (Log Model)",
      xlab="Actual 10-Year Treasury Rate", ylab="Predicted 10-Year Treasury Rate")
+
+# plot residuals
+plot(x=rates_pop_merged$Year, y=linear_fit$residuals, main="Base Fit Residuals",
+     xlab="Year",ylab="Prediction Error")
+plot(x=rates_pop_merged$Year, y=log_fit$residuals, main="Log-Transformed Fit Residuals",
+     xlab="Year",ylab="Prediction Error")
