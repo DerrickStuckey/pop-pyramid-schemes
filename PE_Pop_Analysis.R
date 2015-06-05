@@ -1,4 +1,4 @@
-# Compare US 10-year interest rates with population demographics
+# Compare S&P 500 P/E Ratio with population demographics
 
 sp_500_pe <- read.csv("./sp_500_pe.csv")
 us_pop_5year <- read.csv("./us_pop_5year.csv")
@@ -38,21 +38,21 @@ summary(linear_fit)
 log_transform <- function(x) {log(x+1)}
 unlog_transform <- function(x) {exp(x)-1}
 
-# compute smoothed log-transformed rates
-pe_pop_merged$log_rate <- log_transform(pe_pop_merged$PE_Ratio)
+# compute smoothed log-transformed P/E Ratios
+pe_pop_merged$log_PE <- log_transform(pe_pop_merged$PE_Ratio)
 
-# plot interest rate histograms with and without log-transform
-hist(pe_pop_merged$PE_Ratio, main="Interest Rate Distribution",
-     xlab="10-Year Treasury Rate", ylab="Probability",breaks=10,prob=TRUE)
+# plot P/E Ratio histograms with and without log-transform
+hist(pe_pop_merged$PE_Ratio, main="P/E Ratio Distribution",
+     xlab="P/E Ratio", ylab="Probability",breaks=10,prob=TRUE)
 curve(dnorm(x,mean=mean(pe_pop_merged$PE_Ratio),
             sd=sd(pe_pop_merged$PE_Ratio)),col="blue",add=TRUE)
-hist(pe_pop_merged$log_rate, main="Log-Transformed Interest Rate Distribution",
-     xlab="Log-Transformed 10-Year Treasury Rate", ylab="Probability",breaks=10,prob=TRUE)
-curve(dnorm(x,mean=mean(pe_pop_merged$log_rate),
-            sd=sd(pe_pop_merged$log_rate)),col="blue",add=TRUE)
+hist(pe_pop_merged$log_PE, main="Log-Transformed P/E Ratio Distribution",
+     xlab="Log-Transformed P/E Ratio", ylab="Probability",breaks=10,prob=TRUE)
+curve(dnorm(x,mean=mean(pe_pop_merged$log_PE),
+            sd=sd(pe_pop_merged$log_PE)),col="blue",add=TRUE)
 
-# try with smoothed log-transformed interest rate var
-log_fit <- lm(log_rate ~ X20_34 + X35_49 + X50_64 + over_64, data=pe_pop_merged)
+# try with smoothed log-transformed P/E ratio var
+log_fit <- lm(log_PE ~ X20_34 + X35_49 + X50_64 + over_64, data=pe_pop_merged)
 summary(log_fit)
 
 # historical predictions for linear fit model
@@ -65,19 +65,21 @@ names(preds_logmod) <- pe_pop_merged$Year
 
 # predict the future (linear fit)
 future_age_props <- us_age_props[us_age_props$Year >= 2015,]
-future_rate_preds <- predict(linear_fit, newdata=future_age_props)
-names(future_rate_preds) <- future_age_props$Year
+future_pe_preds <- predict(linear_fit, newdata=future_age_props)
+names(future_pe_preds) <- future_age_props$Year
+future_pe_preds
 
 # predict the future (log-transformed model)
-future_log_rate_preds <- predict(log_fit, newdata=future_age_props)
-future_rate_preds_logmod <- unlog_transform(future_log_rate_preds)
-names(future_rate_preds_logmod) <- future_age_props$Year
+future_log_PE_preds <- predict(log_fit, newdata=future_age_props)
+future_pe_preds_logmod <- unlog_transform(future_log_PE_preds)
+names(future_pe_preds_logmod) <- future_age_props$Year
+future_pe_preds_logmod
 
 # plot the data and results
 plot(x=pe_pop_merged$Year, y=pe_pop_merged$PE_Ratio, main="P/E Ratio over Time",
      xlab="Year",ylab="P/E Ratio")
 
-plot(x=pe_pop_merged$Year, y=pe_pop_merged$log_rate, main="Log-Transformed P/E Ratio over Time",
+plot(x=pe_pop_merged$Year, y=pe_pop_merged$log_PE, main="Log-Transformed P/E Ratio over Time",
      xlab="Year",ylab="Log(P/E Ratio)")
 
 # plot predictor variables over time
@@ -91,10 +93,10 @@ legend("topright", legend = c("under 20","20-34","35-49","50-64","65+"), pch=1, 
 
 # plot predictions
 plot(y=preds_logmod,x=pe_pop_merged$Year, main="Predicted PE (Log Model)",
-     xlab="Year",ylab="Predicted Rate")
+     xlab="Year",ylab="Predicted P/E Ratio")
 
 plot(y=preds,x=pe_pop_merged$Year, main="Predicted PE (Base Model)",
-     xlab="Year",ylab="Predicted Rate")
+     xlab="Year",ylab="Predicted P/E Ratio")
 
 # predictions, actuals vs time
 plot(y=preds_logmod,x=pe_pop_merged$Year, main="Predicted and Actual P/E Ratios",
@@ -103,11 +105,39 @@ points(x=pe_pop_merged$Year, y=pe_pop_merged$PE_Ratio,col="blue")
 legend("bottomright", legend = c("predicted","actual"), pch=1, col=c("red","blue"),horiz=FALSE)
 
 plot(x=pe_pop_merged$PE_Ratio,y=preds_logmod, main="Predicted vs Actual (Log Model)",
-     xlab="Actual 10-Year Treasury Rate", ylab="Predicted P/E Ratio")
+     xlab="Actual P/E Ratio", ylab="Predicted P/E Ratio")
 
 # plot residuals
 plot(x=pe_pop_merged$Year, y=linear_fit$residuals, main="Base Fit Residuals",
      xlab="Year",ylab="Prediction Error")
 plot(x=pe_pop_merged$Year, y=log_fit$residuals, main="Log-Transformed Fit Residuals",
      xlab="Year",ylab="Prediction Error")
+
+# middle-age only model
+midage_model <- lm(log_PE ~ X35_49, data=pe_pop_merged)
+summary(midage_model)
+
+# historical predictions for middle-age model
+preds_midage <- unlog_transform(predict(midage_model, newdata=pe_pop_merged))
+names(preds_midage) <- pe_pop_merged$Year
+
+# predict the future (middle-age model)
+future_midage_PE_preds <- predict(midage_model, newdata=future_age_props)
+future_PE_preds_midage <- unlog_transform(future_midage_PE_preds)
+names(future_PE_preds_midage) <- future_age_props$Year
+future_PE_preds_midage
+
+# middle-age model predictions, actuals vs time
+plot(y=preds_midage,x=pe_pop_merged$Year, main="Predicted and Actual P/E Ratios (35-49 only)",
+     xlab="Year",ylab="P/E Ratio",col="red")
+points(x=pe_pop_merged$Year, y=pe_pop_merged$PE_Ratio,col="blue")
+legend("bottomright", legend = c("predicted (35-49)","actual"), pch=1, col=c("red","blue"),horiz=FALSE)
+
+#individual predictor variable correlations
+cor(pe_pop_merged$PE_Ratio, pe_pop_merged$under_20)
+cor(pe_pop_merged$PE_Ratio, pe_pop_merged$X20_34)
+cor(pe_pop_merged$PE_Ratio, pe_pop_merged$X35_49)
+cor(pe_pop_merged$PE_Ratio, pe_pop_merged$X50_64)
+cor(pe_pop_merged$PE_Ratio, pe_pop_merged$over_64)
+
 
