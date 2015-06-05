@@ -110,3 +110,11 @@ plot(x=rates_pop_merged$Year, y=linear_fit$residuals, main="Base Fit Residuals",
      xlab="Year",ylab="Prediction Error")
 plot(x=rates_pop_merged$Year, y=log_fit$residuals, main="Log-Transformed Fit Residuals",
      xlab="Year",ylab="Prediction Error")
+
+#individual predictor variable correlations
+cor(rates_pop_merged$interest_rate, rates_pop_merged$under_20)
+cor(rates_pop_merged$interest_rate, rates_pop_merged$X20_34)
+cor(rates_pop_merged$interest_rate, rates_pop_merged$X35_49)
+cor(rates_pop_merged$interest_rate, rates_pop_merged$X50_64)
+cor(rates_pop_merged$interest_rate, rates_pop_merged$over_64)
+
